@@ -30,6 +30,8 @@ fn list(
                     if v == i - 1 {
                         continue 'iter;
                     }
+                } else {
+                    continue 'iter;
                 }
             }
         }
