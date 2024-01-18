@@ -21,6 +21,7 @@ fn App() -> impl IntoView {
     let (known_pos, set_known_pos) = create_signal(known_pos);
     let (unknown_pos, set_unknown_pos) = create_signal(unknown_pos);
     view! {
+        <h1>Wordle Helper</h1>
         <table align="left">
             <tr>
                 <td>Letters which are not in the word (e.g., abdw) :</td>
@@ -33,7 +34,8 @@ fn App() -> impl IntoView {
                             set_not_found_chars.set(temp);
                             let chars = event_target_value(&ev);
                             for c in chars.chars() {
-                                if c.is_ascii_lowercase() {
+                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+                                    let c = c.to_ascii_lowercase();
                                     let mut temp = not_found_chars.get();
                                     temp.insert(c);
                                     set_not_found_chars.set(temp);
@@ -65,7 +67,8 @@ fn App() -> impl IntoView {
                             let chars = event_target_value(&ev);
                             let mut it = chars.chars();
                             while let Some(c) = it.next() {
-                                if c.is_ascii_lowercase() {
+                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+                                    let c = c.to_ascii_lowercase();
                                     if let Some(i) = it.next() {
                                         if let Some(n) = i.to_digit(10) {
                                             let mut temp = unknown_pos.get();
@@ -102,20 +105,23 @@ fn App() -> impl IntoView {
                             let idx = 1;
                             let str = event_target_value(&ev);
                             if !str.is_empty() {
-                                let c1 = str.chars().next().unwrap();
-                                let mut temp = known_pos.get();
-                                temp.insert(idx, c1);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            } else if str.is_empty() {
+                                let c = str.chars().next().unwrap();
+                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+                                    let c = c.to_ascii_lowercase();
+                                    let mut temp = known_pos.get();
+                                    temp.insert(idx, c);
+                                    set_known_pos.set(temp);
+                                    set_filtered_words
+                                        .set(
+                                            get_filtered_words(
+                                                &words.get(),
+                                                &unknown_pos.get(),
+                                                &not_found_chars.get(),
+                                                &known_pos.get(),
+                                            ),
+                                        );
+                                }
+                            } else {
                                 let mut temp = known_pos.get();
                                 temp.remove(&idx);
                                 set_known_pos.set(temp);
@@ -140,20 +146,23 @@ fn App() -> impl IntoView {
                             let idx = 2;
                             let str = event_target_value(&ev);
                             if !str.is_empty() {
-                                let c1 = str.chars().next().unwrap();
-                                let mut temp = known_pos.get();
-                                temp.insert(idx, c1);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            } else if str.is_empty() {
+                                let c = str.chars().next().unwrap();
+                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+                                    let c = c.to_ascii_lowercase();
+                                    let mut temp = known_pos.get();
+                                    temp.insert(idx, c);
+                                    set_known_pos.set(temp);
+                                    set_filtered_words
+                                        .set(
+                                            get_filtered_words(
+                                                &words.get(),
+                                                &unknown_pos.get(),
+                                                &not_found_chars.get(),
+                                                &known_pos.get(),
+                                            ),
+                                        );
+                                }
+                            } else {
                                 let mut temp = known_pos.get();
                                 temp.remove(&idx);
                                 set_known_pos.set(temp);
@@ -178,20 +187,23 @@ fn App() -> impl IntoView {
                             let idx = 3;
                             let str = event_target_value(&ev);
                             if !str.is_empty() {
-                                let c1 = str.chars().next().unwrap();
-                                let mut temp = known_pos.get();
-                                temp.insert(idx, c1);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            } else if str.is_empty() {
+                                let c = str.chars().next().unwrap();
+                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+                                    let c = c.to_ascii_lowercase();
+                                    let mut temp = known_pos.get();
+                                    temp.insert(idx, c);
+                                    set_known_pos.set(temp);
+                                    set_filtered_words
+                                        .set(
+                                            get_filtered_words(
+                                                &words.get(),
+                                                &unknown_pos.get(),
+                                                &not_found_chars.get(),
+                                                &known_pos.get(),
+                                            ),
+                                        );
+                                }
+                            } else {
                                 let mut temp = known_pos.get();
                                 temp.remove(&idx);
                                 set_known_pos.set(temp);
@@ -216,20 +228,23 @@ fn App() -> impl IntoView {
                             let idx = 4;
                             let str = event_target_value(&ev);
                             if !str.is_empty() {
-                                let c1 = str.chars().next().unwrap();
-                                let mut temp = known_pos.get();
-                                temp.insert(idx, c1);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            } else if str.is_empty() {
+                                let c = str.chars().next().unwrap();
+                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+                                    let c = c.to_ascii_lowercase();
+                                    let mut temp = known_pos.get();
+                                    temp.insert(idx, c);
+                                    set_known_pos.set(temp);
+                                    set_filtered_words
+                                        .set(
+                                            get_filtered_words(
+                                                &words.get(),
+                                                &unknown_pos.get(),
+                                                &not_found_chars.get(),
+                                                &known_pos.get(),
+                                            ),
+                                        );
+                                }
+                            } else {
                                 let mut temp = known_pos.get();
                                 temp.remove(&idx);
                                 set_known_pos.set(temp);
@@ -254,20 +269,23 @@ fn App() -> impl IntoView {
                             let idx = 5;
                             let str = event_target_value(&ev);
                             if !str.is_empty() {
-                                let c1 = str.chars().next().unwrap();
-                                let mut temp = known_pos.get();
-                                temp.insert(idx, c1);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            } else if str.is_empty() {
+                                let c = str.chars().next().unwrap();
+                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+                                    let c = c.to_ascii_lowercase();
+                                    let mut temp = known_pos.get();
+                                    temp.insert(idx, c);
+                                    set_known_pos.set(temp);
+                                    set_filtered_words
+                                        .set(
+                                            get_filtered_words(
+                                                &words.get(),
+                                                &unknown_pos.get(),
+                                                &not_found_chars.get(),
+                                                &known_pos.get(),
+                                            ),
+                                        );
+                                }
+                            } else {
                                 let mut temp = known_pos.get();
                                 temp.remove(&idx);
                                 set_known_pos.set(temp);
@@ -287,10 +305,10 @@ fn App() -> impl IntoView {
                 </td>
             </tr>
         </table>
-        <br></br>
-        <br></br>
-        <br></br>
-        <br></br>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
         <p>Number of words left: {move || filtered_words.get().len()}</p>
         <ul>
             {move || {
