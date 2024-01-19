@@ -104,37 +104,16 @@ fn App() -> impl IntoView {
                         on:input=move |ev| {
                             let idx = 1;
                             let str = event_target_value(&ev);
-                            if !str.is_empty() {
-                                let c = str.chars().next().unwrap();
-                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
-                                    let c = c.to_ascii_lowercase();
-                                    let mut temp = known_pos.get();
-                                    temp.insert(idx, c);
-                                    set_known_pos.set(temp);
-                                    set_filtered_words
-                                        .set(
-                                            get_filtered_words(
-                                                &words.get(),
-                                                &unknown_pos.get(),
-                                                &not_found_chars.get(),
-                                                &known_pos.get(),
-                                            ),
-                                        );
-                                }
-                            } else {
-                                let mut temp = known_pos.get();
-                                temp.remove(&idx);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            }
+                            filter_known_pos(&str, idx, known_pos, set_known_pos);
+                            set_filtered_words
+                                .set(
+                                    get_filtered_words(
+                                        &words.get(),
+                                        &unknown_pos.get(),
+                                        &not_found_chars.get(),
+                                        &known_pos.get(),
+                                    ),
+                                );
                         }
                     />
 
@@ -145,37 +124,16 @@ fn App() -> impl IntoView {
                         on:input=move |ev| {
                             let idx = 2;
                             let str = event_target_value(&ev);
-                            if !str.is_empty() {
-                                let c = str.chars().next().unwrap();
-                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
-                                    let c = c.to_ascii_lowercase();
-                                    let mut temp = known_pos.get();
-                                    temp.insert(idx, c);
-                                    set_known_pos.set(temp);
-                                    set_filtered_words
-                                        .set(
-                                            get_filtered_words(
-                                                &words.get(),
-                                                &unknown_pos.get(),
-                                                &not_found_chars.get(),
-                                                &known_pos.get(),
-                                            ),
-                                        );
-                                }
-                            } else {
-                                let mut temp = known_pos.get();
-                                temp.remove(&idx);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            }
+                            filter_known_pos(&str, idx, known_pos, set_known_pos);
+                            set_filtered_words
+                                .set(
+                                    get_filtered_words(
+                                        &words.get(),
+                                        &unknown_pos.get(),
+                                        &not_found_chars.get(),
+                                        &known_pos.get(),
+                                    ),
+                                );
                         }
                     />
 
@@ -186,37 +144,16 @@ fn App() -> impl IntoView {
                         on:input=move |ev| {
                             let idx = 3;
                             let str = event_target_value(&ev);
-                            if !str.is_empty() {
-                                let c = str.chars().next().unwrap();
-                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
-                                    let c = c.to_ascii_lowercase();
-                                    let mut temp = known_pos.get();
-                                    temp.insert(idx, c);
-                                    set_known_pos.set(temp);
-                                    set_filtered_words
-                                        .set(
-                                            get_filtered_words(
-                                                &words.get(),
-                                                &unknown_pos.get(),
-                                                &not_found_chars.get(),
-                                                &known_pos.get(),
-                                            ),
-                                        );
-                                }
-                            } else {
-                                let mut temp = known_pos.get();
-                                temp.remove(&idx);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            }
+                            filter_known_pos(&str, idx, known_pos, set_known_pos);
+                            set_filtered_words
+                                .set(
+                                    get_filtered_words(
+                                        &words.get(),
+                                        &unknown_pos.get(),
+                                        &not_found_chars.get(),
+                                        &known_pos.get(),
+                                    ),
+                                );
                         }
                     />
 
@@ -227,37 +164,16 @@ fn App() -> impl IntoView {
                         on:input=move |ev| {
                             let idx = 4;
                             let str = event_target_value(&ev);
-                            if !str.is_empty() {
-                                let c = str.chars().next().unwrap();
-                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
-                                    let c = c.to_ascii_lowercase();
-                                    let mut temp = known_pos.get();
-                                    temp.insert(idx, c);
-                                    set_known_pos.set(temp);
-                                    set_filtered_words
-                                        .set(
-                                            get_filtered_words(
-                                                &words.get(),
-                                                &unknown_pos.get(),
-                                                &not_found_chars.get(),
-                                                &known_pos.get(),
-                                            ),
-                                        );
-                                }
-                            } else {
-                                let mut temp = known_pos.get();
-                                temp.remove(&idx);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            }
+                            filter_known_pos(&str, idx, known_pos, set_known_pos);
+                            set_filtered_words
+                                .set(
+                                    get_filtered_words(
+                                        &words.get(),
+                                        &unknown_pos.get(),
+                                        &not_found_chars.get(),
+                                        &known_pos.get(),
+                                    ),
+                                );
                         }
                     />
 
@@ -268,37 +184,16 @@ fn App() -> impl IntoView {
                         on:input=move |ev| {
                             let idx = 5;
                             let str = event_target_value(&ev);
-                            if !str.is_empty() {
-                                let c = str.chars().next().unwrap();
-                                if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
-                                    let c = c.to_ascii_lowercase();
-                                    let mut temp = known_pos.get();
-                                    temp.insert(idx, c);
-                                    set_known_pos.set(temp);
-                                    set_filtered_words
-                                        .set(
-                                            get_filtered_words(
-                                                &words.get(),
-                                                &unknown_pos.get(),
-                                                &not_found_chars.get(),
-                                                &known_pos.get(),
-                                            ),
-                                        );
-                                }
-                            } else {
-                                let mut temp = known_pos.get();
-                                temp.remove(&idx);
-                                set_known_pos.set(temp);
-                                set_filtered_words
-                                    .set(
-                                        get_filtered_words(
-                                            &words.get(),
-                                            &unknown_pos.get(),
-                                            &not_found_chars.get(),
-                                            &known_pos.get(),
-                                        ),
-                                    );
-                            }
+                            filter_known_pos(&str, idx, known_pos, set_known_pos);
+                            set_filtered_words
+                                .set(
+                                    get_filtered_words(
+                                        &words.get(),
+                                        &unknown_pos.get(),
+                                        &not_found_chars.get(),
+                                        &known_pos.get(),
+                                    ),
+                                );
                         }
                     />
 
@@ -316,6 +211,26 @@ fn App() -> impl IntoView {
             }}
 
         </ul>
+    }
+}
+
+fn filter_known_pos(
+    str: &str,
+    idx: usize,
+    known_pos: ReadSignal<BTreeMap<usize, char>>,
+    set_known_pos: WriteSignal<BTreeMap<usize, char>>,
+) {
+    if let Some(c) = str.chars().next() {
+        if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
+            let c = c.to_ascii_lowercase();
+            let mut temp = known_pos.get();
+            temp.insert(idx, c);
+            set_known_pos.set(temp);
+        }
+    } else {
+        let mut temp = known_pos.get();
+        temp.remove(&idx);
+        set_known_pos.set(temp);
     }
 }
 
