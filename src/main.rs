@@ -65,7 +65,13 @@ fn App() -> impl IntoView {
                             temp.clear();
                             set_unknown_pos.set(temp);
                             let chars = event_target_value(&ev);
-                            let mut it = chars.chars();
+                            let chars = chars
+                                .chars()
+                                .filter(|x| {
+                                    x.is_ascii_lowercase() || x.is_ascii_uppercase()
+                                        || x.is_ascii_digit()
+                                });
+                            let mut it = chars;
                             while let Some(c) = it.next() {
                                 if c.is_ascii_lowercase() || c.is_ascii_uppercase() {
                                     let c = c.to_ascii_lowercase();
