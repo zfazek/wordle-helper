@@ -205,18 +205,58 @@ fn App() -> impl IntoView {
 
                 </td>
             </tr>
-        </table>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <p>Number of words left: {move || filtered_words.get().len()}</p>
+            <tr>
+            <td>
+        Number of words left: {move || filtered_words.get().len()}
+            </td>
+            </tr>
+            <tr>
+            <td>
+            <td>
         <ul>
             {move || {
-                filtered_words.get().into_iter().map(|n| view! { <li>{n}</li> }).collect::<Vec<_>>()
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 5 == 0).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
             }}
 
         </ul>
+            </td>
+            <td>
+        <ul>
+            {move || {
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 5 == 1).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+            }}
+
+        </ul>
+            </td>
+            <td>
+        <ul>
+            {move || {
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 5 == 2).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+            }}
+
+        </ul>
+            </td>
+            </td>
+            <td>
+            <td>
+        <ul>
+            {move || {
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 5 == 3).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+            }}
+
+        </ul>
+            </td>
+            <td>
+        <ul>
+            {move || {
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 5 == 4).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+            }}
+
+        </ul>
+            </td>
+            </td>
+            </tr>
+        </table>
     }
 }
 
