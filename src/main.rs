@@ -1,4 +1,4 @@
-// trunk build --release
+// trunk build --release --dist release
 // trunk serve --address 0.0.0.0 --port 8000
 // nvim :%s/wordle/wordle\/wordle/g
 
