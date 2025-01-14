@@ -38,7 +38,30 @@ pub(crate) fn get_filtered_words(
         }
         result.push(word.to_owned());
     }
+    let result = sort(&result);
     result
+}
+
+pub(crate) fn sort(words: &Vec<String>) -> Vec<String> {
+    let mut res = Vec::new();
+    let mut weights = Vec::new();
+    for word in words.iter() {
+        let mut weight: usize = 0;
+        for i in 0..4 {
+            let c = word.chars().nth(i).unwrap();
+            for w in words.iter() {
+                if w.chars().nth(i).unwrap() == c {
+                    weight += 1;
+                }
+            }
+        }
+        weights.push((weight, word));
+    }
+    weights.sort_by(|a, b| b.cmp(a));
+    for w in weights {
+        res.push(w.1.to_owned());
+    }
+    res
 }
 
 fn get_num_chars_in_pos_filters(

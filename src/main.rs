@@ -1,13 +1,21 @@
+// build release:
 // trunk build --release --dist release
+//
+// nvim release/index.html
+//   :%s/wordle/wordle\/wordle/g
+//
+// build temp:
 // trunk serve --address 0.0.0.0 --port 8000
-// nvim :%s/wordle/wordle\/wordle/g
 
 use crate::filter::get_filtered_words;
+use crate::filter::sort;
 use leptos::*;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 mod filter;
+
+const NUM_COLS: usize = 6;
 
 #[component]
 fn App() -> impl IntoView {
@@ -16,6 +24,7 @@ fn App() -> impl IntoView {
     for line in input.lines() {
         w.push(line.to_owned());
     }
+    w = sort(&w);
     let unknown_pos: BTreeMap<char, Vec<usize>> = BTreeMap::new();
     let not_found_chars: BTreeSet<char> = BTreeSet::new();
     let known_pos: BTreeMap<usize, char> = BTreeMap::new();
@@ -221,7 +230,7 @@ fn App() -> impl IntoView {
             <td>
         <ul>
             {move || {
-                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 6 == 0).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % NUM_COLS == 0).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
             }}
 
         </ul>
@@ -229,7 +238,7 @@ fn App() -> impl IntoView {
             <td>
         <ul>
             {move || {
-                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 6 == 1).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % NUM_COLS == 1).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
             }}
 
         </ul>
@@ -237,7 +246,7 @@ fn App() -> impl IntoView {
             <td>
         <ul>
             {move || {
-                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 6 == 2).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % NUM_COLS == 2).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
             }}
 
         </ul>
@@ -247,7 +256,7 @@ fn App() -> impl IntoView {
             <td>
         <ul>
             {move || {
-                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 6 == 3).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % NUM_COLS == 3).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
             }}
 
         </ul>
@@ -255,7 +264,7 @@ fn App() -> impl IntoView {
             <td>
         <ul>
             {move || {
-                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 6 == 4).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % NUM_COLS == 4).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
             }}
 
         </ul>
@@ -263,7 +272,7 @@ fn App() -> impl IntoView {
             <td>
         <ul>
             {move || {
-                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % 6 == 5).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
+                filtered_words.get().into_iter().enumerate().filter(|(i, _)| i % NUM_COLS == 5).map(|(_, n)| view! { <li>{n}</li> }).collect::<Vec<_>>()
             }}
 
         </ul>
