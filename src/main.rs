@@ -5,7 +5,7 @@
 //   :%s/wordle/wordle\/wordle/g
 //
 // build temp:
-// trunk serve --address 0.0.0.0 --port 8000
+// trunk serve --release --address 0.0.0.0 --port 8000
 
 use crate::filter::get_filtered_words;
 use crate::filter::sort;
