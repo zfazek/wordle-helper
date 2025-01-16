@@ -9,7 +9,7 @@
 
 use crate::filter::get_filtered_words;
 use crate::filter::sort;
-use leptos::*;
+use leptos::prelude::*;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -28,14 +28,14 @@ fn App() -> impl IntoView {
     let unknown_pos: BTreeMap<char, Vec<usize>> = BTreeMap::new();
     let not_found_chars: BTreeSet<char> = BTreeSet::new();
     let known_pos: BTreeMap<usize, char> = BTreeMap::new();
-    let (words, _set_words) = create_signal(w.clone());
-    let (filtered_words, set_filtered_words) = create_signal(w);
-    let (not_found_chars, set_not_found_chars) = create_signal(not_found_chars);
-    let (known_pos, set_known_pos) = create_signal(known_pos);
-    let (unknown_pos, set_unknown_pos) = create_signal(unknown_pos);
+    let (words, _set_words) = signal(w.clone());
+    let (filtered_words, set_filtered_words) = signal(w);
+    let (not_found_chars, set_not_found_chars) = signal(not_found_chars);
+    let (known_pos, set_known_pos) = signal(known_pos);
+    let (unknown_pos, set_unknown_pos) = signal(unknown_pos);
     view! {
         <h1>Wordle Helper</h1>
-        <table align="left">
+        <table>
             <tr>
                 <td>Letters which are not in the word (e.g., abdw) :</td>
                 <td>
@@ -224,7 +224,7 @@ fn App() -> impl IntoView {
             </td>
             </tr>
             </table>
-            <table align="left">
+            <table>
             <tr>
             <td>
             <td>
@@ -304,5 +304,5 @@ fn filter_known_pos(
 }
 
 fn main() {
-    leptos::mount_to_body(|| view! { <App/> });
+    leptos::mount::mount_to_body(|| view! { <App/> });
 }
