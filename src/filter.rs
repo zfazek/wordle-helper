@@ -1,6 +1,3 @@
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-
 /// Which ranking heuristic to apply to the filtered candidate list.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RankMethod {
@@ -8,65 +5,6 @@ pub enum RankMethod {
     Positional,
     /// O(n^2) expected-information ranking (see [`rank_by_information`]).
     Information,
-}
-
-/// Filters the word list by the current clues and ranks the survivors with the
-/// positional method (the cheap default). Kept for existing callers/tests.
-pub fn get_filtered_words(
-    words: &[String],
-    unknown_pos: &BTreeMap<char, Vec<usize>>,
-    not_found_chars: &BTreeSet<char>,
-    known_pos: &BTreeMap<usize, char>,
-) -> Vec<String> {
-    get_filtered_words_with(
-        words,
-        unknown_pos,
-        not_found_chars,
-        known_pos,
-        RankMethod::Positional,
-    )
-}
-
-/// Like [`get_filtered_words`] but lets the caller choose the ranking method.
-pub fn get_filtered_words_with(
-    words: &[String],
-    unknown_pos: &BTreeMap<char, Vec<usize>>,
-    not_found_chars: &BTreeSet<char>,
-    known_pos: &BTreeMap<usize, char>,
-    method: RankMethod,
-) -> Vec<String> {
-    let mut result = Vec::new();
-    'iter: for word in words.iter() {
-        for &c in not_found_chars.iter() {
-            let n = get_num_chars_in_pos_filters(c, unknown_pos, known_pos);
-            let m = word.matches(c).count();
-            if m > n {
-                continue 'iter;
-            }
-        }
-        for (&i, &c) in known_pos.iter() {
-            let v = word.chars().nth(i - 1).unwrap();
-            if v != c {
-                continue 'iter;
-            }
-        }
-        for (&c, indices) in unknown_pos.iter() {
-            if !word.contains(c) {
-                continue 'iter;
-            }
-            for &i in indices {
-                let v = word.chars().nth(i - 1).unwrap();
-                if v == c {
-                    continue 'iter;
-                }
-            }
-        }
-        result.push(word.to_owned());
-    }
-    match method {
-        RankMethod::Positional => sort(&result),
-        RankMethod::Information => rank_by_information(&result),
-    }
 }
 
 /// Ranks words by a blend of positional and presence letter frequency.
@@ -125,19 +63,6 @@ pub fn sort(words: &[String]) -> Vec<String> {
     weights.into_iter().map(|(_, w)| w.to_owned()).collect()
 }
 
-fn get_num_chars_in_pos_filters(
-    c: char,
-    unknown_pos: &BTreeMap<char, Vec<usize>>,
-    known_pos: &BTreeMap<usize, char>,
-) -> usize {
-    let mut count = 0;
-    if let Some(v) = unknown_pos.get(&c) {
-        count += v.len();
-    }
-    count += known_pos.values().filter(|&x| c == *x).count();
-    count
-}
-
 /// Tile colors returned by [`feedback`]: grey (not in word), yellow (in word,
 /// wrong position), green (correct position).
 pub const GREY: u8 = 0;
@@ -181,6 +106,68 @@ pub fn feedback(guess: &str, answer: &str) -> [u8; 5] {
     }
 
     result
+}
+
+/// A past guess together with the feedback pattern the player observed for it.
+pub type Guess = (String, [u8; 5]);
+
+/// Parses a 5-character color code into a feedback pattern.
+///
+/// Accepted characters (case-insensitive):
+/// * `g` -> [`GREEN`]
+/// * `y` -> [`YELLOW`]
+/// * `x`, `b`, `.`, or `-` -> [`GREY`]
+///
+/// Returns `None` unless the code is exactly 5 valid characters.
+pub fn parse_pattern(code: &str) -> Option<[u8; 5]> {
+    let mut pattern = [GREY; 5];
+    let mut n = 0;
+    for (i, c) in code.chars().enumerate() {
+        if i >= 5 {
+            return None; // too long
+        }
+        pattern[i] = match c.to_ascii_lowercase() {
+            'g' => GREEN,
+            'y' => YELLOW,
+            'x' | 'b' | '.' | '-' => GREY,
+            _ => return None,
+        };
+        n += 1;
+    }
+    if n == 5 {
+        Some(pattern)
+    } else {
+        None
+    }
+}
+
+/// True iff `candidate` is consistent with the observed `pattern` for `guess`,
+/// i.e. guessing `guess` against `candidate` would reproduce exactly `pattern`.
+pub fn matches_feedback(candidate: &str, guess: &str, pattern: &[u8; 5]) -> bool {
+    feedback(guess, candidate) == *pattern
+}
+
+/// Filters `words` to those consistent with every observed guess, then ranks
+/// the survivors with `method`.
+///
+/// A word survives iff, for every `(guess, pattern)`, simulating the guess
+/// against the word reproduces the observed pattern. This is exactly Wordle's
+/// own feedback rule, so it handles all duplicate-letter cases correctly
+/// (unlike attribute buckets, it preserves per-guess letter counts).
+pub fn filter_by_guesses(words: &[String], guesses: &[Guess], method: RankMethod) -> Vec<String> {
+    let result: Vec<String> = words
+        .iter()
+        .filter(|word| {
+            guesses
+                .iter()
+                .all(|(guess, pattern)| matches_feedback(word, guess, pattern))
+        })
+        .cloned()
+        .collect();
+    match method {
+        RankMethod::Positional => sort(&result),
+        RankMethod::Information => rank_by_information(&result),
+    }
 }
 
 /// Encodes a feedback pattern as a base-3 integer in `0..243`, for use as a
@@ -359,6 +346,101 @@ mod tests {
         // A word guessed against itself is always all green.
         for w in ["abcde", "hello", "zzzzz"] {
             assert_eq!(feedback(w, w), [GREEN; 5]);
+        }
+    }
+
+    #[test]
+    fn parse_pattern_valid_and_invalid() {
+        assert_eq!(parse_pattern("ggggg"), Some([GREEN; 5]));
+        assert_eq!(parse_pattern("xxxxx"), Some([GREY; 5]));
+        assert_eq!(
+            parse_pattern("gyxGY"),
+            Some([GREEN, YELLOW, GREY, GREEN, YELLOW])
+        );
+        // Alternate grey spellings.
+        assert_eq!(parse_pattern("b.-xy"), Some([GREY, GREY, GREY, GREY, YELLOW]));
+        // Wrong length / invalid chars.
+        assert_eq!(parse_pattern("gggg"), None);
+        assert_eq!(parse_pattern("gggggg"), None);
+        assert_eq!(parse_pattern("gg?gg"), None);
+        assert_eq!(parse_pattern(""), None);
+    }
+
+    fn words(list: &[&str]) -> Vec<String> {
+        list.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn filter_by_guesses_empty_returns_all_ranked() {
+        let all = words(&["crane", "slate", "trace"]);
+        let out = filter_by_guesses(&all, &[], RankMethod::Positional);
+        assert_eq!(out.len(), all.len());
+    }
+
+    #[test]
+    fn filter_by_guesses_basic_greens_and_greys() {
+        let all = words(&["slate", "crane", "trace", "plate", "blame"]);
+        // Guess CRANE, answer-consistent pattern for SLATE:
+        // C grey, R grey, A yellow(not pos3), N grey, E green.
+        let pat = feedback("crane", "slate");
+        let out = filter_by_guesses(&all, &[("crane".to_string(), pat)], RankMethod::Positional);
+        // SLATE must survive (it generated the pattern); CRANE must not.
+        assert!(out.contains(&"slate".to_string()));
+        assert!(!out.contains(&"crane".to_string()));
+        // Every survivor must reproduce the pattern.
+        for w in &out {
+            assert_eq!(feedback("crane", w), pat);
+        }
+    }
+
+    #[test]
+    fn filter_by_guesses_distinguishes_duplicate_letter_counts() {
+        // The ambiguity the attribute-bucket model could not express:
+        // "exactly one E and not at this position" vs "at least two E's".
+        let all = words(&["abbey", "ebony", "elbow", "steel", "sheen"]);
+
+        // Guess "eexxx"-style: use guess "eerie" against answer "ebony"
+        // (one E, at position 0). Pattern: E green, E grey, R grey, I grey, E grey.
+        let guess = "eerie";
+        let pat_one_e = feedback(guess, "ebony");
+        assert_eq!(pat_one_e, [GREEN, GREY, GREY, GREY, GREY]);
+        let out_one = filter_by_guesses(
+            &all,
+            &[(guess.to_string(), pat_one_e)],
+            RankMethod::Positional,
+        );
+        // "ebony" (one E) survives; "steel"/"sheen" (two E's) must be rejected,
+        // because a second E would have shown yellow, not grey.
+        assert!(out_one.contains(&"ebony".to_string()));
+        assert!(!out_one.contains(&"steel".to_string()));
+        assert!(!out_one.contains(&"sheen".to_string()));
+
+        // Now a pattern proving >=2 E's: guess "eerie" against "steel".
+        // steel = s,t,e,e,l. Expect at least one green + one yellow E.
+        let pat_two_e = feedback(guess, "steel");
+        let out_two = filter_by_guesses(
+            &all,
+            &[(guess.to_string(), pat_two_e)],
+            RankMethod::Positional,
+        );
+        // "steel" survives its own pattern; single-E "ebony" cannot.
+        assert!(out_two.contains(&"steel".to_string()));
+        assert!(!out_two.contains(&"ebony".to_string()));
+    }
+
+    #[test]
+    fn filter_by_guesses_multiple_guesses_intersect() {
+        let all = words(&["crane", "slate", "trace", "plate", "grace", "brace"]);
+        let answer = "grace";
+        let g1 = ("crane".to_string(), feedback("crane", answer));
+        let g2 = ("trace".to_string(), feedback("trace", answer));
+        let out = filter_by_guesses(&all, &[g1, g2], RankMethod::Positional);
+        // The true answer always survives the conjunction of its own feedbacks.
+        assert!(out.contains(&"grace".to_string()));
+        // Every survivor is consistent with both guesses.
+        for w in &out {
+            assert_eq!(feedback("crane", w), feedback("crane", answer));
+            assert_eq!(feedback("trace", w), feedback("trace", answer));
         }
     }
 }

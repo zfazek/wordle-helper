@@ -1,4 +1,3 @@
-// build release:
 // build release (served under /wordle/):
 // trunk build --release --dist release --public-url /wordle/
 //
@@ -9,11 +8,8 @@
 // trunk serve --release --address 0.0.0.0 --port 8000
 
 use leptos::prelude::*;
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-use wordle_helper::filter::get_filtered_words_with;
-use wordle_helper::filter::sort;
-use wordle_helper::filter::RankMethod;
+use wordle_helper::filter::{filter_by_guesses, parse_pattern, sort, Guess, RankMethod};
+use wordle_helper::filter::{GREEN, YELLOW};
 
 const NUM_COLS: usize = 6;
 
@@ -25,15 +21,19 @@ fn App() -> impl IntoView {
     let compact_words = StoredValue::new(sort(&parse(include_str!("../words-compact.txt"))));
     let full_words = StoredValue::new(sort(&parse(include_str!("../words-full.txt"))));
 
-    let (not_found_chars, set_not_found_chars) = signal(BTreeSet::<char>::new());
-    let (known_pos, set_known_pos) = signal(BTreeMap::<usize, char>::new());
-    let (unknown_pos, set_unknown_pos) = signal(BTreeMap::<char, Vec<usize>>::new());
+    // The list of submitted guesses: each a (word, feedback-pattern) pair.
+    let (guesses, set_guesses) = signal(Vec::<Guess>::new());
+    // Pending input row (word + 5-char color code).
+    let (pending_word, set_pending_word) = signal(String::new());
+    let (pending_code, set_pending_code) = signal(String::new());
+
     // Word-set toggle: off = compact answer set (default), on = full guess set.
     let (use_full, set_use_full) = signal(false);
     // Ranking method toggle: off = fast positional sort (default), on = the
     // heavier expected-information ranking.
     let (use_entropy, set_use_entropy) = signal(false);
-    // Derived, reactive list: recomputes whenever any input signal changes.
+
+    // Derived, reactive candidate list.
     let filtered_words = Memo::new(move |_| {
         let full = use_full.get();
         // The entropy ranking is O(n^2); it is unusable on the full (~13k) set,
@@ -44,91 +44,141 @@ fn App() -> impl IntoView {
             RankMethod::Positional
         };
         let words = if full { full_words } else { compact_words };
-        get_filtered_words_with(
-            &words.read_value(),
-            &unknown_pos.get(),
-            &not_found_chars.get(),
-            &known_pos.get(),
-            method,
-        )
+        filter_by_guesses(&words.read_value(), &guesses.get(), method)
     });
+
+    // Appends the pending row as a guess once both fields are complete. The
+    // inputs are sanitized as the user types, so this only needs a length check.
+    let submit_guess = move || {
+        let word = pending_word.get();
+        let code = pending_code.get();
+        if word.len() != 5 {
+            return;
+        }
+        if let Some(pattern) = parse_pattern(&code) {
+            set_guesses.update(|g| g.push((word, pattern)));
+            set_pending_word.set(String::new());
+            set_pending_code.set(String::new());
+        }
+    };
+
     view! {
         <h1>Wordle Helper</h1>
-        <table>
-            <tr>
-                <td>Letters which are not in the word (e.g., abdw) :</td>
-                <td>
-                    <input
-                        type="text"
-                        on:input=move |ev| {
-                            let value = event_target_value(&ev);
-                            set_not_found_chars
-                                .update(|chars| {
-                                    chars.clear();
-                                    chars
-                                        .extend(
-                                            value
-                                                .chars()
-                                                .filter(|c| c.is_ascii_alphabetic())
-                                                .map(|c| c.to_ascii_lowercase()),
-                                        );
-                                });
-                        }
-                    />
 
-                </td>
-            </tr>
-            <tr>
-                <td>Letters which are not in the right position (e.g.,a1b2a3d5) :</td>
-                <td>
-                    <input
-                        type="text"
-                        on:input=move |ev| {
-                            let value = event_target_value(&ev);
-                            set_unknown_pos
-                                .update(|map| {
-                                    map.clear();
-                                    let mut it = value
-                                        .chars()
-                                        .filter(|x| x.is_ascii_alphabetic() || x.is_ascii_digit());
-                                    while let Some(c) = it.next() {
-                                        if c.is_ascii_alphabetic() {
-                                            let c = c.to_ascii_lowercase();
-                                            if let Some(i) = it.next() {
-                                                if let Some(n) = i.to_digit(10) {
-                                                    map.entry(c).or_default().push(n as usize);
-                                                }
-                                            } else {
-                                                break;
-                                            }
-                                        }
-                                    }
-                                });
-                        }
-                    />
+        <p>
+            "Enter each guess and the colors Wordle showed. Color code: "
+            <b>g</b> " = green (right spot), " <b>y</b> " = yellow (wrong spot), "
+            <b>x</b> " = grey (not in word). Example: guess " <code>crane</code>
+            ", code " <code>xxyxg</code> "."
+        </p>
 
-                </td>
-            </tr>
-            <tr>
-                <td>Known letters:</td>
-                <td>
-                    {(1..=5)
-                        .map(|idx| {
+        // Submitted guesses, each rendered as colored tiles with a remove button.
+        <div>
+            {move || {
+                let gs = guesses.get();
+                if gs.is_empty() {
+                    view! { <p><i>"No guesses yet."</i></p> }.into_any()
+                } else {
+                    gs.into_iter()
+                        .enumerate()
+                        .map(|(i, (word, pattern))| {
+                            let tiles = word
+                                .chars()
+                                .zip(pattern)
+                                .map(|(ch, tile)| {
+                                    let color = match tile {
+                                        GREEN => "#6aaa64",
+                                        YELLOW => "#c9b458",
+                                        _ => "#787c7e", // GREY
+                                    };
+                                    let style = format!(
+                                        "display:inline-block;width:1.6em;height:1.6em;\
+                                         line-height:1.6em;text-align:center;margin:1px;\
+                                         color:white;text-transform:uppercase;\
+                                         font-weight:bold;background:{color};",
+                                    );
+                                    view! { <span style=style>{ch}</span> }
+                                })
+                                .collect::<Vec<_>>();
                             view! {
-                                <input
-                                    type="text"
-                                    size="1"
-                                    maxlength="1"
-                                    on:input=move |ev| {
-                                        let str = event_target_value(&ev);
-                                        filter_known_pos(&str, idx, set_known_pos);
-                                    }
-                                />
+                                <div style="margin:2px 0;">
+                                    {tiles}
+                                    <button on:click=move |_| {
+                                        set_guesses.update(|g| { g.remove(i); });
+                                    }>"✕"</button>
+                                </div>
                             }
                         })
-                        .collect::<Vec<_>>()}
-                </td>
-            </tr>
+                        .collect::<Vec<_>>()
+                        .into_any()
+                }
+            }}
+        </div>
+
+        // Pending input row: 5-letter word + 5-char color code. Enter submits.
+        // Both inputs are sanitized on every keystroke so only valid characters
+        // can ever appear (letters for the guess; g/y/x for the code).
+        <div style="margin:8px 0;">
+            <input
+                type="text"
+                size="6"
+                maxlength="5"
+                placeholder="guess"
+                prop:value=move || pending_word.get()
+                on:input=move |ev| {
+                    let clean: String = event_target_value(&ev)
+                        .chars()
+                        .filter(|c| c.is_ascii_alphabetic())
+                        .map(|c| c.to_ascii_lowercase())
+                        .take(5)
+                        .collect();
+                    set_pending_word.set(clean);
+                }
+                on:keydown=move |ev| {
+                    if ev.key() == "Enter" {
+                        submit_guess();
+                    }
+                }
+            />
+            <input
+                type="text"
+                size="6"
+                maxlength="5"
+                placeholder="gyxxg"
+                prop:value=move || pending_code.get()
+                on:input=move |ev| {
+                    let clean: String = event_target_value(&ev)
+                        .chars()
+                        .filter_map(|c| match c.to_ascii_lowercase() {
+                            'g' => Some('g'),
+                            'y' => Some('y'),
+                            'x' | 'b' | '.' | '-' => Some('x'),
+                            _ => None,
+                        })
+                        .take(5)
+                        .collect();
+                    set_pending_code.set(clean);
+                }
+                on:keydown=move |ev| {
+                    if ev.key() == "Enter" {
+                        submit_guess();
+                    }
+                }
+            />
+            <button
+                prop:disabled=move || {
+                    pending_word.get().len() != 5 || pending_code.get().len() != 5
+                }
+                on:click=move |_| submit_guess()
+            >
+                "Add guess"
+            </button>
+            <button on:click=move |_| {
+                set_guesses.set(Vec::new());
+            }>"Clear all"</button>
+        </div>
+
+        <table>
             <tr>
                 <td>"Use full word set (bigger; use when the answer is missing):"</td>
                 <td>
@@ -155,12 +205,11 @@ fn App() -> impl IntoView {
                 </td>
             </tr>
             <tr>
-            <td>
-        Number of words left: {move || filtered_words.get().len()}
-            </td>
+                <td>"Number of words left: " {move || filtered_words.get().len()}</td>
             </tr>
-            </table>
-            <table>
+        </table>
+
+        <table>
             <tr>
                 {(0..NUM_COLS)
                     .map(|col| {
@@ -183,27 +232,6 @@ fn App() -> impl IntoView {
                     .collect::<Vec<_>>()}
             </tr>
         </table>
-    }
-}
-
-fn filter_known_pos(
-    str: &str,
-    idx: usize,
-    set_known_pos: WriteSignal<BTreeMap<usize, char>>,
-) {
-    match str.chars().next() {
-        Some(c) if c.is_ascii_alphabetic() => {
-            let c = c.to_ascii_lowercase();
-            set_known_pos.update(|map| {
-                map.insert(idx, c);
-            });
-        }
-        None => {
-            set_known_pos.update(|map| {
-                map.remove(&idx);
-            });
-        }
-        _ => {}
     }
 }
 
