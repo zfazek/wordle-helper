@@ -1,17 +1,19 @@
 // build release:
-// trunk build --release --dist release
+// build release (served under /wordle/):
+// trunk build --release --dist release --public-url /wordle/
 //
-// nvim release/index.html
-//   :%s/wordle/wordle\/wordle/g
+// --public-url makes Trunk emit asset paths prefixed with /wordle/, so no
+// manual edit of release/index.html is needed.
 //
-// build temp:
+// serve locally (served at root /):
 // trunk serve --release --address 0.0.0.0 --port 8000
 
 use leptos::prelude::*;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use wordle_helper::filter::get_filtered_words;
+use wordle_helper::filter::get_filtered_words_with;
 use wordle_helper::filter::sort;
+use wordle_helper::filter::RankMethod;
 
 const NUM_COLS: usize = 6;
 
@@ -27,13 +29,22 @@ fn App() -> impl IntoView {
     let (not_found_chars, set_not_found_chars) = signal(BTreeSet::<char>::new());
     let (known_pos, set_known_pos) = signal(BTreeMap::<usize, char>::new());
     let (unknown_pos, set_unknown_pos) = signal(BTreeMap::<char, Vec<usize>>::new());
+    // Ranking method toggle: off = fast positional sort (default), on = the
+    // heavier expected-information ranking.
+    let (use_entropy, set_use_entropy) = signal(false);
     // Derived, reactive list: recomputes whenever any input signal changes.
     let filtered_words = Memo::new(move |_| {
-        get_filtered_words(
+        let method = if use_entropy.get() {
+            RankMethod::Information
+        } else {
+            RankMethod::Positional
+        };
+        get_filtered_words_with(
             &words.read_value(),
             &unknown_pos.get(),
             &not_found_chars.get(),
             &known_pos.get(),
+            method,
         )
     });
     view! {
@@ -111,6 +122,18 @@ fn App() -> impl IntoView {
                             }
                         })
                         .collect::<Vec<_>>()}
+                </td>
+            </tr>
+            <tr>
+                <td>"Rank by expected information (slower, better guesses):"</td>
+                <td>
+                    <input
+                        type="checkbox"
+                        prop:checked=move || use_entropy.get()
+                        on:change=move |ev| {
+                            set_use_entropy.set(event_target_checked(&ev));
+                        }
+                    />
                 </td>
             </tr>
             <tr>
