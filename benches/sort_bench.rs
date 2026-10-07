@@ -10,7 +10,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use wordle_helper::filter::{rank_by_information, sort};
 
-const WORDS: &str = include_str!("../words.txt");
+const WORDS: &str = include_str!("../words-compact.txt");
 
 fn load_words() -> Vec<String> {
     WORDS.lines().map(|l| l.to_owned()).collect()
