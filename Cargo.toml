@@ -8,6 +8,13 @@ edition = "2021"
 [dependencies]
 leptos = { version = "0.7.4", features = ["csr"] }
 
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "sort_bench"
+harness = false
+
 [profile.wasm-release]
 inherits = "release"
 opt-level = 'z'
