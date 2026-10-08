@@ -116,7 +116,7 @@ pub type Guess = (String, [u8; 5]);
 /// Accepted characters (case-insensitive):
 /// * `g` -> [`GREEN`]
 /// * `y` -> [`YELLOW`]
-/// * `x`, `b`, `.`, or `-` -> [`GREY`]
+/// * `x`, space, `.`, or `-` -> [`GREY`]
 ///
 /// Returns `None` unless the code is exactly 5 valid characters.
 pub fn parse_pattern(code: &str) -> Option<[u8; 5]> {
@@ -129,7 +129,7 @@ pub fn parse_pattern(code: &str) -> Option<[u8; 5]> {
         pattern[i] = match c.to_ascii_lowercase() {
             'g' => GREEN,
             'y' => YELLOW,
-            'x' | 'b' | '.' | '-' => GREY,
+            'x' | ' ' | '.' | '-' => GREY,
             _ => return None,
         };
         n += 1;
@@ -357,8 +357,8 @@ mod tests {
             parse_pattern("gyxGY"),
             Some([GREEN, YELLOW, GREY, GREEN, YELLOW])
         );
-        // Alternate grey spellings.
-        assert_eq!(parse_pattern("b.-xy"), Some([GREY, GREY, GREY, GREY, YELLOW]));
+        // Alternate grey spellings (space, dot, dash).
+        assert_eq!(parse_pattern(" .-xy"), Some([GREY, GREY, GREY, GREY, YELLOW]));
         // Wrong length / invalid chars.
         assert_eq!(parse_pattern("gggg"), None);
         assert_eq!(parse_pattern("gggggg"), None);

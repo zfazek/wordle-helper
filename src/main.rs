@@ -8,10 +8,16 @@
 // trunk serve --release --address 0.0.0.0 --port 8000
 
 use leptos::prelude::*;
-use wordle_helper::filter::{filter_by_guesses, parse_pattern, sort, Guess, RankMethod};
+use wordle_helper::filter::{
+    filter_by_guesses, parse_pattern, rank_by_information, sort, Guess, RankMethod,
+};
 use wordle_helper::filter::{GREEN, YELLOW};
 
 const NUM_COLS: usize = 6;
+
+/// Maximum candidate count at which the O(n^2) entropy ranking is applied. Above
+/// this the recompute would stall the UI, so we fall back to the fast sort.
+const ENTROPY_MAX_CANDIDATES: usize = 1200;
 
 #[component]
 fn App() -> impl IntoView {
@@ -26,6 +32,8 @@ fn App() -> impl IntoView {
     // Pending input row (word + 5-char color code).
     let (pending_word, set_pending_word) = signal(String::new());
     let (pending_code, set_pending_code) = signal(String::new());
+    // Ref to the guess input, so focus can return to it after each submit.
+    let guess_input: NodeRef<leptos::html::Input> = NodeRef::new();
 
     // Word-set toggle: off = compact answer set (default), on = full guess set.
     let (use_full, set_use_full) = signal(false);
@@ -35,16 +43,19 @@ fn App() -> impl IntoView {
 
     // Derived, reactive candidate list.
     let filtered_words = Memo::new(move |_| {
-        let full = use_full.get();
-        // The entropy ranking is O(n^2); it is unusable on the full (~13k) set,
-        // so force the fast positional sort whenever the full set is active.
-        let method = if use_entropy.get() && !full {
-            RankMethod::Information
+        let words = if use_full.get() { full_words } else { compact_words };
+        // Filter first with the cheap positional sort; this yields the current
+        // candidate set regardless of which word list we started from.
+        let filtered =
+            filter_by_guesses(&words.read_value(), &guesses.get(), RankMethod::Positional);
+        // Entropy ranking is O(n^2), so only apply it once the candidate set has
+        // narrowed below a threshold where it stays interactive. This works for
+        // the full word set too: after a few guesses it shrinks like any other.
+        if use_entropy.get() && filtered.len() <= ENTROPY_MAX_CANDIDATES {
+            rank_by_information(&filtered)
         } else {
-            RankMethod::Positional
-        };
-        let words = if full { full_words } else { compact_words };
-        filter_by_guesses(&words.read_value(), &guesses.get(), method)
+            filtered
+        }
     });
 
     // Appends the pending row as a guess once both fields are complete. The
@@ -59,6 +70,10 @@ fn App() -> impl IntoView {
             set_guesses.update(|g| g.push((word, pattern)));
             set_pending_word.set(String::new());
             set_pending_code.set(String::new());
+            // Return focus to the guess field for the next entry.
+            if let Some(el) = guess_input.get() {
+                let _ = el.focus();
+            }
         }
     };
 
@@ -121,6 +136,7 @@ fn App() -> impl IntoView {
         <div style="margin:8px 0;">
             <input
                 type="text"
+                node_ref=guess_input
                 size="6"
                 maxlength="5"
                 placeholder="guess"
@@ -152,7 +168,7 @@ fn App() -> impl IntoView {
                         .filter_map(|c| match c.to_ascii_lowercase() {
                             'g' => Some('g'),
                             'y' => Some('y'),
-                            'x' | 'b' | '.' | '-' => Some('x'),
+                            'x' | ' ' | '.' | '-' => Some('x'),
                             _ => None,
                         })
                         .take(5)
@@ -192,16 +208,36 @@ fn App() -> impl IntoView {
                 </td>
             </tr>
             <tr>
-                <td>"Rank by expected information (slower, better guesses):"</td>
+                <td>
+                    "Rank by expected information once "
+                    {ENTROPY_MAX_CANDIDATES} " or fewer words remain:"
+                </td>
                 <td>
                     <input
                         type="checkbox"
                         prop:checked=move || use_entropy.get()
-                        prop:disabled=move || use_full.get()
                         on:change=move |ev| {
                             set_use_entropy.set(event_target_checked(&ev));
                         }
                     />
+                    {move || {
+                        if use_entropy.get() {
+                            let n = filtered_words.get().len();
+                            if n <= ENTROPY_MAX_CANDIDATES {
+                                view! { <span style="margin-left:6px;color:#6aaa64;">"(active)"</span> }
+                                    .into_any()
+                            } else {
+                                view! {
+                                    <span style="margin-left:6px;color:#888;">
+                                        "(waiting: narrow further)"
+                                    </span>
+                                }
+                                    .into_any()
+                            }
+                        } else {
+                            view! { <span></span> }.into_any()
+                        }
+                    }}
                 </td>
             </tr>
             <tr>
