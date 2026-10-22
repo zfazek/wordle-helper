@@ -28,6 +28,8 @@ fn App() -> impl IntoView {
     let (pending_code, set_pending_code) = signal(String::new());
     // Ref to the guess input, so focus can return to it after each submit.
     let guess_input: NodeRef<leptos::html::Input> = NodeRef::new();
+    // Ref to the code input, so focus can auto-advance here when the word is complete.
+    let code_input: NodeRef<leptos::html::Input> = NodeRef::new();
 
     // Word-set toggle: off = compact answer set (default), on = full guess set.
     let (use_full, set_use_full) = signal(false);
@@ -134,7 +136,14 @@ fn App() -> impl IntoView {
                         .map(|c| c.to_ascii_lowercase())
                         .take(5)
                         .collect();
-                    set_pending_word.set(clean);
+                let was_full = clean.len() == 5 && pending_word.get().len() < 5;
+                set_pending_word.set(clean);
+                // Auto-advance only on the transition into a full word.
+                if was_full {
+                    if let Some(el) = code_input.get() {
+                        let _ = el.focus();
+                    }
+                }
                 }
                 on:keydown=move |ev| {
                     if ev.key() == "Enter" {
@@ -144,6 +153,7 @@ fn App() -> impl IntoView {
             />
             <input
                 type="text"
+                node_ref=code_input
                 size="6"
                 maxlength="5"
                 placeholder="gyxxg"
